@@ -4,9 +4,6 @@ import sys
 import logging
 from scapy.all import Ether, ARP, srp, get_if_hwaddr
 
-
-
-
 class ArpPoising: 
     def __init__(self, ip_target: str):
         self.target = ip_target
@@ -37,14 +34,10 @@ class ArpPoising:
             time.sleep(sleep)
             srp(pkt, timeout=5, verbose=False)
 
-
-
-
-
 if __name__ == '__main__': 
 
     if len(sys.argv) < 3: 
-        print(r".\arp_poising.py <ip_target> <ip_gateway>")
+        print(r"./arp_poising.py <ip_target> <ip_gateway>")
         exit()
 
     logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
