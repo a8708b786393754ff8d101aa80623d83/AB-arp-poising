@@ -1,8 +1,11 @@
-#! /usr/local/bin/python3.10
+#! /usr/bin/python3
 import time 
 import sys 
 import logging
-from scapy.all import Ether, ARP, srp, get_if_hwaddr
+from scapy.arch import get_if_hwaddr
+from scapy.layers.inet import Ether
+from scapy.layers.l2 import ARP 
+from scapy.sendrecv import srp
 
 class ArpPoising: 
     def __init__(self, ip_target: str):
