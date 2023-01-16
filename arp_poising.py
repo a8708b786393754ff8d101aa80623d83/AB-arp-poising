@@ -13,6 +13,16 @@ MY_MAC = get_if_hwaddr('enp7s0')  # NOTE recupere mon MAC de l'interface
 
 
 def get_mac(gateway: str = None, target: str = None):
+    """Function that returns the mac address of the given ip address.
+
+    Args:
+        gateway (str, optional): gateway ip. Defaults to None.
+        target (str, optional): target ip. Defaults to None.
+
+    Returns:
+        str: mac to ip.
+    """
+    
     pkt = Ether(dst='ff:ff:ff:ff:ff:ff') / ARP(pdst=gateway)
 
     if target:
