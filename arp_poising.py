@@ -1,7 +1,9 @@
 #! /usr/bin/python3
-import time
-import sys
 import logging
+import sys
+import time
+
+from args import argument
 from scapy.arch import get_if_hwaddr
 from scapy.layers.inet import Ether
 from scapy.layers.l2 import ARP
@@ -43,14 +45,11 @@ class ArpPoising:
 
 if __name__ == '__main__':
 
-    if len(sys.argv) < 3:
-        print(r"./arp_poising.py <ip_target> <ip_gateway>")
-        exit()
-
     logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 
-    ip_target = sys.argv[1]
-    ip_gateway = sys.argv[2]
+    arg = argument()
+    ip_target = arg.target
+    ip_gateway = arg.gateway
 
     poising = ArpPoising(ip_target)
     mac_addr_gateway = poising.get_mac(ip_gateway)
