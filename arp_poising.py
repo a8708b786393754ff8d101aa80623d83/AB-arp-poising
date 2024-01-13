@@ -36,7 +36,7 @@ def get_mac(gateway: str = None, target: str = None):
         return r.hwsrc
 
 
-def poising(target_mac: str, ip_target: str, gateway_ip: str = '192.168.0.1', loop: int = 10, sleep_: int | float = 0.005):
+def poising(target_mac: str, ip_target: str, gateway_ip: str = '192.168.0.1', loop: int = 10, sleep_: float = 0.005):
     """Function target arp table poisoning
 
     Args:
