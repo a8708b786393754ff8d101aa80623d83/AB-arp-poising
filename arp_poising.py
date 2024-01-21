@@ -45,4 +45,3 @@ mac_gateway = get_mac(GATEWAY)
 
 threading.Thread(target=poising_target, args=(mac_target, )).start()
 threading.Thread(target=poising_gateway, args=(mac_gateway, )).start()
-    

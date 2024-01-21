@@ -2,9 +2,12 @@
 Python script that does an arp poising attack, the script doesn't need any dependencies.
 
 # Use
-
-```sh
-python3 arp_poising.py <ip_target> <ip_gateway>
+You must change these variables to use this script
+```py
+IFACE = 'YOUR_INTERFACE'
+GATEWAY = 'IP_GATEWAY'
+TARGET = 'IP_TARGET'
 ```
-# Disclaimer
-The project is on pause, if you wish to contribute please contact me via discord (everything is in my github profile)
+```sh
+python3 arp_poising.py
+```
